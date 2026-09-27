@@ -1,0 +1,6 @@
+{
+  "name": "PaperGlow Billing",
+  "description": "Original professional Invoice and Quotation Management System with customer tracking, payment allocation, and PDF generation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

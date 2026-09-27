@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="240" height="60">
+  <defs>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="6" width="48" height="48" rx="10" fill="url(#glowGrad)" />
+  <path d="M22 18 h12 a6 6 0 0 1 0 12 h-12 z" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M22 18 v24" stroke="#ffffff" stroke-width="4" stroke-linecap="round" />
+  <text x="64" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="800" fill="#0f172a" letter-spacing="-0.5">Paper<tspan fill="#f59e0b">Glow</tspan></text>
+</svg>
