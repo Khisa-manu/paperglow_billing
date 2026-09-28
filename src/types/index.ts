@@ -4,6 +4,9 @@ export interface User {
   email: string;
   role: 'admin' | 'manager' | 'staff';
   status: 'active' | 'inactive';
+  avatar?: string;
+  department?: string;
+  last_login?: string;
 }
 
 export interface CompanySettings {

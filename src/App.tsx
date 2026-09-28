@@ -16,11 +16,17 @@ import { CustomerModal } from './components/CustomerModal';
 import { ReportsView } from './components/ReportsView';
 import { CompanySettingsView } from './components/CompanySettingsView';
 import { SchemaView } from './components/SchemaView';
+import { LoginView } from './components/LoginView';
+import { LogoutScreen } from './components/LogoutScreen';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const {
+    isAuthenticated,
+    isLoggedOutScreen,
+    setIsLoggedOutScreen,
+    lastUserLoggedOut,
     activeTab,
     flash,
     clearFlash,
@@ -78,6 +84,22 @@ const MainApp: React.FC = () => {
         return <DashboardView />;
     }
   };
+
+  // If user has explicitly logged out, show the Logout Screen
+  if (isLoggedOutScreen) {
+    return (
+      <LogoutScreen
+        onReturnToLogin={() => setIsLoggedOutScreen(false)}
+        lastUserEmail={lastUserLoggedOut?.email}
+        lastUserName={lastUserLoggedOut?.name}
+      />
+    );
+  }
+
+  // If not authenticated, show Login View
+  if (!isAuthenticated) {
+    return <LoginView />;
+  }
 
   return (
     <div className="pg-layout min-h-screen bg-slate-50">

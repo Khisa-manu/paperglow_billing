@@ -120,23 +120,19 @@ export const QuotationDetailView: React.FC<QuotationDetailViewProps> = ({ quotat
         {/* Header */}
         <div className="pg-doc-header d-flex flex-column flex-sm-row justify-content-between gap-4">
           <div className="d-flex flex-column gap-2">
-            <div className="d-flex align-items-center gap-2">
+            <div className="d-flex align-items-center gap-3">
               {company.logo ? (
                 <img
                   src={company.logo}
                   alt={company.company_name}
-                  style={{ maxHeight: '48px', maxWidth: '180px', objectFit: 'contain' }}
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
+                  referrerPolicy="no-referrer"
+                  style={{ maxHeight: '68px', maxWidth: '240px', objectFit: 'contain' }}
                 />
-              ) : null}
-              <div className="pg-brand-emblem" style={{ width: '34px', height: '34px', fontSize: '1rem' }}>
-                P
-              </div>
-              <span className="h4 fw-extrabold text-slate-900 tracking-tight mb-0">
-                {company.company_name}
-              </span>
+              ) : (
+                <span className="h4 fw-extrabold text-slate-900 tracking-tight mb-0">
+                  {company.company_name}
+                </span>
+              )}
             </div>
             <div className="text-xs text-slate-600 whitespace-pre-line leading-relaxed">
               {company.address}

@@ -32,7 +32,21 @@ interface FlashMessage {
   type: 'success' | 'danger' | 'info' | 'warning';
 }
 
+export interface AuthResult {
+  success: boolean;
+  error?: string;
+}
+
 interface BillingContextType {
+  // Auth state
+  isAuthenticated: boolean;
+  isLoggedOutScreen: boolean;
+  setIsLoggedOutScreen: (show: boolean) => void;
+  lastUserLoggedOut: User | null;
+  login: (email: string, password?: string, rememberMe?: boolean) => AuthResult;
+  logout: () => void;
+  register: (name: string, email: string, password?: string, role?: 'admin' | 'manager' | 'staff') => AuthResult;
+
   user: User;
   company: CompanySettings;
   customers: Customer[];
@@ -98,12 +112,66 @@ interface BillingContextType {
 
 const BillingContext = createContext<BillingContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'paperglow_billing_data_v3';
+interface StoredUser extends User {
+  password?: string;
+}
+
+const DEFAULT_USERS: StoredUser[] = [
+  {
+    id: 1,
+    name: 'John Kamau',
+    email: 'johnkamaukibe126@gmail.com',
+    password: 'admin123',
+    role: 'admin',
+    status: 'active',
+    department: 'Executive Operations',
+    last_login: '2026-09-28'
+  },
+  {
+    id: 2,
+    name: 'Admin PaperGlow',
+    email: 'admin@paperglow.co.ke',
+    password: 'admin123',
+    role: 'admin',
+    status: 'active',
+    department: 'Administration',
+    last_login: '2026-09-28'
+  },
+  {
+    id: 3,
+    name: 'Sarah Wanjiku',
+    email: 'finance@paperglow.co.ke',
+    password: 'finance123',
+    role: 'manager',
+    status: 'active',
+    department: 'Finance & Accounts',
+    last_login: '2026-09-28'
+  },
+  {
+    id: 4,
+    name: 'David Omondi',
+    email: 'billing@paperglow.co.ke',
+    password: 'billing123',
+    role: 'staff',
+    status: 'active',
+    department: 'Billing & Invoicing',
+    last_login: '2026-09-28'
+  }
+];
+
+const STORAGE_KEY = 'paperglow_billing_data_v4';
+const AUTH_SESSION_KEY = 'paperglow_auth_session_v1';
+const USERS_STORAGE_KEY = 'paperglow_users_v1';
 
 export const BillingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load initial data from localStorage if available
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [user, setUser] = useState<User>(initialUser);
+  const [user, setUser] = useState<User>(DEFAULT_USERS[0]);
+  const [usersList, setUsersList] = useState<StoredUser[]>(DEFAULT_USERS);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [isLoggedOutScreen, setIsLoggedOutScreen] = useState<boolean>(false);
+  const [lastUserLoggedOut, setLastUserLoggedOut] = useState<User | null>(null);
+
   const [company, setCompany] = useState<CompanySettings>(initialCompany);
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [quotations, setQuotations] = useState<Quotation[]>(initialQuotations);
@@ -128,17 +196,143 @@ export const BillingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const [paymentModalInvoiceId, setPaymentModalInvoiceId] = useState<number | null>(null);
 
+  // Authentication functions
+  const login = (emailInput: string, passwordInput?: string, rememberMe: boolean = true): AuthResult => {
+    const cleanEmail = emailInput.trim().toLowerCase();
+    const foundUser = usersList.find((u) => u.email.toLowerCase() === cleanEmail);
+
+    if (!foundUser) {
+      return { success: false, error: 'No account found with this email address.' };
+    }
+
+    if (foundUser.password && passwordInput && foundUser.password !== passwordInput.trim()) {
+      return { success: false, error: 'Incorrect password. Please try again.' };
+    }
+
+    const loggedInUser: User = {
+      ...foundUser,
+      last_login: new Date().toISOString().split('T')[0]
+    };
+
+    setUser(loggedInUser);
+    setIsAuthenticated(true);
+    setIsLoggedOutScreen(false);
+    setLastUserLoggedOut(null);
+
+    try {
+      if (rememberMe) {
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(loggedInUser));
+      } else {
+        sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(loggedInUser));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    showFlash(`Welcome back, ${loggedInUser.name}!`, 'success');
+    return { success: true };
+  };
+
+  const logout = () => {
+    setLastUserLoggedOut(user);
+    setIsAuthenticated(false);
+    setIsLoggedOutScreen(true);
+    try {
+      localStorage.removeItem(AUTH_SESSION_KEY);
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
+    } catch (e) {
+      console.error(e);
+    }
+    showFlash('You have been safely signed out.', 'info');
+  };
+
+  const register = (
+    name: string,
+    emailInput: string,
+    passwordInput?: string,
+    role: 'admin' | 'manager' | 'staff' = 'admin'
+  ): AuthResult => {
+    const cleanEmail = emailInput.trim().toLowerCase();
+    const existing = usersList.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      return { success: false, error: 'An account with this email address already exists.' };
+    }
+
+    const newUser: StoredUser = {
+      id: Date.now(),
+      name: name.trim(),
+      email: cleanEmail,
+      password: passwordInput?.trim() || 'password123',
+      role,
+      status: 'active',
+      department: role === 'admin' ? 'Administration' : role === 'manager' ? 'Finance' : 'Operations',
+      last_login: new Date().toISOString().split('T')[0]
+    };
+
+    const updatedUsers = [...usersList, newUser];
+    setUsersList(updatedUsers);
+    try {
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+    } catch (e) {
+      console.error(e);
+    }
+
+    const sessionUser: User = { ...newUser };
+    setUser(sessionUser);
+    setIsAuthenticated(true);
+    setIsLoggedOutScreen(false);
+    setLastUserLoggedOut(null);
+    try {
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(sessionUser));
+    } catch (e) {
+      console.error(e);
+    }
+    showFlash(`Account registered! Welcome, ${newUser.name}.`, 'success');
+    return { success: true };
+  };
+
   // Load state on mount
   useEffect(() => {
     try {
       localStorage.removeItem('paperglow_billing_data_v1');
       localStorage.removeItem('paperglow_billing_data_v2');
+      localStorage.removeItem('paperglow_billing_data_v3');
+      
+      // Load stored custom users
+      const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+      if (savedUsers) {
+        try {
+          const parsedUsers = JSON.parse(savedUsers);
+          if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
+            setUsersList(parsedUsers);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      // Load session
+      const savedSession = localStorage.getItem(AUTH_SESSION_KEY) || sessionStorage.getItem(AUTH_SESSION_KEY);
+      if (savedSession) {
+        try {
+          const parsedSession = JSON.parse(savedSession);
+          if (parsedSession && parsedSession.email) {
+            setUser(parsedSession);
+            setIsAuthenticated(true);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.company) {
           const currency = parsed.company.currency === 'USD' || !parsed.company.currency ? 'KES' : parsed.company.currency;
-          setCompany({ ...parsed.company, currency });
+          const companyName = !parsed.company.company_name || parsed.company.company_name === 'PaperGlow Studio' ? 'PaperGlow Enterprise' : parsed.company.company_name;
+          const logo = !parsed.company.logo || parsed.company.logo.includes('sample_logo') ? '/uploads/logos/paperglow_enterprise.png' : parsed.company.logo;
+          setCompany({ ...parsed.company, currency, company_name: companyName, logo });
         }
         if (parsed.customers) setCustomers(parsed.customers);
         if (parsed.quotations) setQuotations(parsed.quotations);
@@ -428,6 +622,14 @@ export const BillingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   return (
     <BillingContext.Provider
       value={{
+        isAuthenticated,
+        isLoggedOutScreen,
+        setIsLoggedOutScreen,
+        lastUserLoggedOut,
+        login,
+        logout,
+        register,
+
         user,
         company,
         customers,

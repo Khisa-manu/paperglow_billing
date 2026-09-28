@@ -11,8 +11,8 @@ export const initialUser: User = {
 export const initialCompany: CompanySettings = {
   id: 1,
   user_id: 1,
-  company_name: 'PaperGlow Studio',
-  logo: '',
+  company_name: 'PaperGlow Enterprise',
+  logo: '/uploads/logos/paperglow_enterprise.png',
   address: '',
   phone: '',
   email: '',

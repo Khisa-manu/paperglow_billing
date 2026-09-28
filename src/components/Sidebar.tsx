@@ -10,7 +10,8 @@ import {
   Settings,
   Database,
   ExternalLink,
-  Plus
+  Plus,
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,6 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
     setActiveTab,
     company,
     user,
+    logout,
     setViewingInvoiceId,
     setEditingInvoiceId,
     setIsCreatingInvoice,
@@ -63,24 +65,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
         <div className="pg-sidebar-header d-flex align-items-center justify-content-between">
           <button
             onClick={() => handleNav('dashboard')}
-            className="d-flex align-items-center text-decoration-none gap-2 bg-transparent border-0 text-start p-0 cursor-pointer"
+            className="d-flex align-items-center text-decoration-none gap-2 bg-transparent border-0 text-start p-0 cursor-pointer w-100"
           >
             {company.logo ? (
-              <img
-                src={company.logo}
-                alt={company.company_name}
-                style={{ maxHeight: '36px', maxWidth: '140px', objectFit: 'contain' }}
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
-            ) : null}
-            <div className="d-flex align-items-center gap-2">
-              <div className="pg-brand-emblem">P</div>
-              <div className="pg-brand-text">
-                Paper<span>Glow</span>
+              <div className="d-flex align-items-center gap-2 py-1">
+                <img
+                  src={company.logo}
+                  alt={company.company_name}
+                  referrerPolicy="no-referrer"
+                  className="max-h-[46px] max-w-[190px] object-contain rounded bg-white p-1 shadow-xs"
+                />
               </div>
-            </div>
+            ) : (
+              <div className="d-flex align-items-center gap-2">
+                <div className="font-extrabold text-base tracking-tight text-white truncate max-w-[180px]" title={company.company_name || 'PaperGlow Enterprise'}>
+                  {company.company_name || 'PaperGlow Enterprise'}
+                </div>
+              </div>
+            )}
           </button>
         </div>
 
@@ -169,15 +171,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
 
         {/* Sidebar User Footer */}
         <div className="pg-sidebar-footer">
-          <div className="d-flex align-items-center justify-content-between text-muted small">
+          <div className="d-flex align-items-center justify-content-between text-muted small mb-2">
             <div className="d-flex align-items-center gap-2 overflow-hidden">
               <div
                 className="rounded-circle bg-amber-500 text-slate-950 font-bold d-flex align-items-center justify-content-center flex-shrink-0"
-                style={{ width: '30px', height: '30px', fontSize: '0.75rem' }}
+                style={{ width: '32px', height: '32px', fontSize: '0.8rem' }}
               >
                 {user.name.charAt(0).toUpperCase()}
               </div>
-              <div className="text-truncate" style={{ maxWidth: '140px' }}>
+              <div className="text-truncate" style={{ maxWidth: '125px' }}>
                 <div className="text-slate-100 fw-semibold text-truncate text-xs">
                   {user.name}
                 </div>
@@ -186,10 +188,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
                 </div>
               </div>
             </div>
-            <span
-              className="badge bg-slate-800 text-amber-400 border border-slate-700 text-[10px] text-uppercase"
-              title="Administrator Role"
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('Are you sure you want to sign out of PaperGlow Enterprise?')) {
+                  logout();
+                }
+              }}
+              title="Sign Out"
+              className="btn btn-sm btn-outline-danger p-1.5 d-flex align-items-center justify-content-center border-slate-700 hover:border-rose-500 text-slate-300 hover:text-rose-400 rounded-lg"
             >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="d-flex align-items-center justify-content-between pt-1 border-t border-slate-800 text-[10px]">
+            <span className="text-slate-400">Signed in as:</span>
+            <span className="badge bg-slate-800 text-amber-400 border border-slate-700 text-[10px] text-uppercase">
               {user.role}
             </span>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useBilling } from '../context/BillingContext';
 import {
   Building2,
@@ -10,15 +10,24 @@ import {
   Save,
   RotateCcw,
   Check,
-  ShieldCheck
+  ShieldCheck,
+  Upload,
+  Image as ImageIcon,
+  Trash2,
+  Link as LinkIcon,
+  AlertCircle
 } from 'lucide-react';
 
 export const CompanySettingsView: React.FC = () => {
   const { company, updateCompanySettings, resetToSeedData } = useBilling();
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [companyName, setCompanyName] = useState(company.company_name);
+  const [logo, setLogo] = useState(company.logo || '');
+  const [logoError, setLogoError] = useState<string | null>(null);
   const [taxNumber, setTaxNumber] = useState(company.tax_number);
-  const [currency, setCurrency] = useState(company.currency);
+  const [currency, setCurrency] = useState(company.currency || 'KES');
   const [email, setEmail] = useState(company.email);
   const [phone, setPhone] = useState(company.phone);
   const [website, setWebsite] = useState(company.website);
@@ -38,10 +47,45 @@ export const CompanySettingsView: React.FC = () => {
   const [defaultInvoiceTerms, setDefaultInvoiceTerms] = useState(company.default_invoice_terms);
   const [defaultQuotationTerms, setDefaultQuotationTerms] = useState(company.default_quotation_terms);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLogoError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setLogoError('Please upload an image file (PNG, JPG, SVG, WebP).');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoError('File size is over 2MB. Please upload a smaller image.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setLogo(dataUrl);
+    };
+    reader.onerror = () => {
+      setLogoError('Failed to read image file.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveLogo = () => {
+    setLogo('');
+    setLogoError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateCompanySettings({
       company_name: companyName,
+      logo: logo,
       tax_number: taxNumber,
       currency,
       email,
@@ -65,17 +109,110 @@ export const CompanySettingsView: React.FC = () => {
       <div>
         <h2 className="h5 fw-bold text-slate-900 mb-1">Company & Billing Remittance Settings</h2>
         <p className="text-xs text-slate-500 mb-0">
-          Configure corporate branding, banking instructions, tax IDs, and default contracts.
+          Configure corporate branding, company logo, banking instructions, tax IDs, and default contracts.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Business Profile */}
+        {/* Business Profile & Logo */}
         <div className="pg-card p-4">
           <h3 className="h6 fw-bold text-slate-900 mb-3 d-flex align-items-center gap-2">
             <Building2 className="w-4 h-4 text-amber-500" />
-            Corporate Identity
+            Corporate Identity & Logo
           </h3>
+
+          {/* Logo Upload Section */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl mb-4">
+            <label className="form-label-pg d-flex align-items-center gap-1.5 mb-2">
+              <ImageIcon className="w-4 h-4 text-amber-600" />
+              <span>Company Logo</span>
+            </label>
+
+            <div className="d-flex flex-column flex-sm-row align-items-sm-center gap-4">
+              {/* Logo Preview Box */}
+              <div
+                className="d-flex align-items-center justify-content-center bg-white border border-slate-300 rounded-lg p-2 overflow-hidden shadow-sm flex-shrink-0"
+                style={{ width: '180px', height: '80px' }}
+              >
+                {logo ? (
+                  <img
+                    src={logo}
+                    alt="Company Logo Preview"
+                    className="max-h-full max-w-full object-contain"
+                    onError={() => {
+                      setLogoError('Could not load image from provided URL.');
+                    }}
+                  />
+                ) : (
+                  <div className="text-center text-slate-400">
+                    <ImageIcon className="w-6 h-6 mx-auto mb-1 text-slate-300" />
+                    <span className="text-[11px] d-block">No Logo Uploaded</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Controls */}
+              <div className="flex-1 space-y-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                  className="d-none"
+                  onChange={handleFileChange}
+                />
+
+                <div className="d-flex flex-wrap align-items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5 text-xs font-semibold bg-white"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-slate-600" />
+                    <span>Upload Logo File</span>
+                  </button>
+
+                  {logo && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="btn btn-sm btn-outline-danger d-flex align-items-center gap-1.5 text-xs font-semibold bg-white"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove Logo</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Direct Image URL input */}
+                <div className="d-flex align-items-center gap-2 pt-1">
+                  <span className="text-slate-400 text-xs flex-shrink-0">
+                    <LinkIcon className="w-3.5 h-3.5" />
+                  </span>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm text-xs font-mono"
+                    placeholder="Or paste image URL (e.g. https://... or /uploads/...)"
+                    value={logo}
+                    onChange={(e) => {
+                      setLogo(e.target.value);
+                      setLogoError(null);
+                    }}
+                  />
+                </div>
+
+                <p className="text-[11px] text-slate-500 mb-0">
+                  Recommended: Transparent PNG or SVG (approx. 400x120px, max 2MB). Automatically displays on your invoices, quotations, and sidebar.
+                </p>
+
+                {logoError && (
+                  <div className="text-xs text-rose-600 d-flex align-items-center gap-1 mt-1 font-medium">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{logoError}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           <div className="row g-3">
             <div className="col-md-6">
